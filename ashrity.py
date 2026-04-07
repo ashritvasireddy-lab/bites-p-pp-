@@ -1,39 +1,24 @@
 import streamlit as st
-import pandas as pd
 
-# --- Initialize votes in session_state ---
-if "Cats" not in st.session_state:
-    st.session_state.Cats = 0
-if "Dogs" not in st.session_state:
-    st.session_state.Dogs = 0
+st.title("📐 Rectangle Calculator")
 
-st.title("🐱 Cats vs Dogs 🐶 Poll")
-st.write("Vote for your favorite and see the results live!")
+# Input fields
+length = st.number_input("Enter the length:", min_value=0.0, step=0.1)
+width = st.number_input("Enter the width:", min_value=0.0, step=0.1)
 
-# Poll radio button
-choice = st.radio("Which do you prefer?", ("Cats", "Dogs"))
+# Calculate area and perimeter
+area = length * width
+perimeter = 2 * (length + width)
 
-# Vote button
-if st.button("Vote!"):
-    if choice == "Cats":
-        st.session_state.Cats += 1
-    else:
-        st.session_state.Dogs += 1
-    st.success(f"Thanks for voting for {choice}!")
+st.subheader("Results")
+st.write("Your area is", area)
+st.write("Your perimeter is", perimeter)
 
-# Show results as a bar chart
-st.subheader("Poll Results")
-
-votes = {"Cats": st.session_state.Cats, "Dogs": st.session_state.Dogs}
-total_votes = sum(votes.values())
-
-if total_votes == 0:
-    st.write("No votes yet.")
+# Optional: Draw a simple rectangle
+st.subheader("Visual Representation")
+if length > 0 and width > 0:
+    st.write("⬛" * int(length), "\n" * int(width))
 else:
-    # Convert to DataFrame for graph
-    df = pd.DataFrame(list(votes.items()), columns=["Animal", "Votes"])
-    st.bar_chart(df.set_index("Animal"))
-    # Optional: show percentage
-    for animal, count in votes.items():
-        st.write(f"{animal}: {count} vote(s) ({count/total_votes*100:.1f}%)")
+    st.write("Enter positive values to see the rectangle.")
+
 
