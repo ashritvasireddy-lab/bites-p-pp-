@@ -1,53 +1,54 @@
 import streamlit as st
-import random
+from googleapiclient.discovery import build
 
-st.set_page_config(page_title="🎯 Game Hub", layout="centered")
+# ---- CONFIG ----
+API_KEY = "YOUR_API_KEY_HERE"
 
-# -------------------- SESSION STATE --------------------
-if "step" not in st.session_state:
-    st.session_state.step = "math_quiz1"
-if "math1" not in st.session_state:
-    st.session_state.math1 = (random.randint(1,10), random.randint(1,10))
-if "math2" not in st.session_state:
-    st.session_state.math2 = (random.randint(1,10), random.randint(1,10))
-if "answer_submitted" not in st.session_state:
-    st.session_state.answer_submitted = False
+youtube = build("youtube", "v3", developerKey=API_KEY)
 
-# -------------------- UTILITY --------------------
-def restart_game():
-    st.session_state.step = "math_quiz1"
-    st.session_state.math1 = (random.randint(1,10), random.randint(1,10))
-    st.session_state.math2 = (random.randint(1,10), random.randint(1,10))
-    st.session_state.answer_submitted = False
-    st.experimental_rerun()
+st.set_page_config(page_title="YouTube Channel Stats", layout="centered")
 
-# -------------------- MATH QUIZ --------------------
-def math_quiz(n1, n2, next_step, key):
-    st.markdown("## 🧮 Math Quiz")
-    answer = st.number_input(f"{n1} + {n2} = ?", value=0, key=key)
-    if st.button("Submit", key=f"btn_{key}"):
-        st.session_state.answer_submitted = True
-        st.session_state.answer_value = answer
+st.title("📊 YouTube Channel Stats Checker")
 
-    if st.session_state.answer_submitted:
-        if st.session_state.answer_value != n1 + n2:
-            st.warning("❌ Wrong! Restarting...")
-            restart_game()
+# ---- INPUT ----
+channel_name = st.text_input("Enter YouTube Channel Name")
+
+def get_channel_stats(name):
+    search_response = youtube.search().list(
+        q=name,
+        part="snippet",
+        type="channel",
+        maxResults=1
+    ).execute()
+
+    if not search_response["items"]:
+        return None
+
+    channel_id = search_response["items"][0]["snippet"]["channelId"]
+
+    channel_response = youtube.channels().list(
+        part="snippet,statistics",
+        id=channel_id
+    ).execute()
+
+    return channel_response["items"][0]
+
+# ---- BUTTON ----
+if st.button("Get Stats"):
+    if channel_name:
+        data = get_channel_stats(channel_name)
+
+        if data:
+            stats = data["statistics"]
+            snippet = data["snippet"]
+
+            st.subheader(snippet["title"])
+            st.image(snippet["thumbnails"]["high"]["url"])
+
+            st.write("**Subscribers:**", stats.get("subscriberCount", "Hidden"))
+            st.write("**Total Views:**", stats["viewCount"])
+            st.write("**Total Videos:**", stats["videoCount"])
         else:
-            st.success("✅ Correct!")
-            st.session_state.step = next_step
-            st.session_state.answer_submitted = False
-            st.experimental_rerun()
-
-# -------------------- MAIN FLOW --------------------
-def main():
-    if st.session_state.step=="math_quiz1":
-        n1, n2 = st.session_state.math1
-        math_quiz(n1, n2, "math_quiz2", "q1")
-    elif st.session_state.step=="math_quiz2":
-        n1, n2 = st.session_state.math2
-        math_quiz(n1, n2, "next_step_placeholder", "q2")
+            st.error("Channel not found!")
     else:
-        st.write("Next step goes here...")
-
-main()
+        st.warning("Enter a channel name first")
