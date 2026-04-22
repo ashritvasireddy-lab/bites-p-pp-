@@ -1,54 +1,41 @@
 import streamlit as st
-from googleapiclient.discovery import build
 
-# ---- CONFIG ----
-API_KEY = "YOUR_API_KEY_HERE"
+# Save value in memory
+if "value" not in st.session_state:
+    st.session_state.value = ""
 
-youtube = build("youtube", "v3", developerKey=API_KEY)
+def press(num):
+    st.session_state.value += str(num)
 
-st.set_page_config(page_title="YouTube Channel Stats", layout="centered")
+def clear():
+    st.session_state.value = ""
 
-st.title("📊 YouTube Channel Stats Checker")
+def calculate():
+    try:
+        st.session_state.value = str(eval(st.session_state.value))
+    except:
+        st.session_state.value = "Error"
 
-# ---- INPUT ----
-channel_name = st.text_input("Enter YouTube Channel Name")
+st.title("Button Calculator")
 
-def get_channel_stats(name):
-    search_response = youtube.search().list(
-        q=name,
-        part="snippet",
-        type="channel",
-        maxResults=1
-    ).execute()
+st.text_input("Result", value=st.session_state.value, key="display")
 
-    if not search_response["items"]:
-        return None
+# Buttons
+cols = st.columns(4)
 
-    channel_id = search_response["items"][0]["snippet"]["channelId"]
+buttons = [
+    "7", "8", "9", "/",
+    "4", "5", "6", "*",
+    "1", "2", "3", "-",
+    "0", ".", "=", "+"
+]
 
-    channel_response = youtube.channels().list(
-        part="snippet,statistics",
-        id=channel_id
-    ).execute()
-
-    return channel_response["items"][0]
-
-# ---- BUTTON ----
-if st.button("Get Stats"):
-    if channel_name:
-        data = get_channel_stats(channel_name)
-
-        if data:
-            stats = data["statistics"]
-            snippet = data["snippet"]
-
-            st.subheader(snippet["title"])
-            st.image(snippet["thumbnails"]["high"]["url"])
-
-            st.write("**Subscribers:**", stats.get("subscriberCount", "Hidden"))
-            st.write("**Total Views:**", stats["viewCount"])
-            st.write("**Total Videos:**", stats["videoCount"])
+for i, btn in enumerate(buttons):
+    if cols[i % 4].button(btn):
+        if btn == "=":
+            calculate()
         else:
-            st.error("Channel not found!")
-    else:
-        st.warning("Enter a channel name first")
+            press(btn)
+
+if st.button("Clear"):
+    clear()
